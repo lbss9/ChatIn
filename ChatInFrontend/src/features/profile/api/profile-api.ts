@@ -18,7 +18,7 @@ export type UserProfile = {
 let pendingRefresh: Promise<void> | null = null;
 
 async function authorizedRequest<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
-  const token = localStorage.getItem('chatin_access_token');
+  const token = sessionStorage.getItem('chatin_access_token');
   const headers = new Headers(options.headers);
   if (!(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
@@ -27,7 +27,7 @@ async function authorizedRequest<T>(path: string, options: RequestInit = {}, isR
 
   if (response.status === 401 && !isRetry) {
     if (!pendingRefresh) {
-      const rt = localStorage.getItem('chatin_refresh_token');
+      const rt = sessionStorage.getItem('chatin_refresh_token');
       if (!rt) {
         clearAuthSession();
         throw new Error('Sessão inválida. Entre novamente.');
@@ -53,7 +53,7 @@ async function authorizedRequest<T>(path: string, options: RequestInit = {}, isR
 }
 
 function saveProfile(profile: UserProfile) {
-  localStorage.setItem('chatin_user', JSON.stringify(profile));
+  sessionStorage.setItem('chatin_user', JSON.stringify(profile));
   return profile;
 }
 
@@ -67,7 +67,7 @@ export const profileApi = {
     authorizedRequest<UserProfile>('/auth/email', { method: 'PATCH', body: JSON.stringify(payload) }).then(saveProfile),
   logout: () => authorizedRequest<{ success: boolean }>('/auth/logout', {
     method: 'POST',
-    body: JSON.stringify({ refreshToken: localStorage.getItem('chatin_refresh_token') ?? '' }),
+    body: JSON.stringify({ refreshToken: sessionStorage.getItem('chatin_refresh_token') ?? '' }),
   }),
   deleteAccount: (payload: { currentPassword: string; confirmation: string }) =>
     authorizedRequest<{ success: boolean }>('/auth/account', { method: 'DELETE', body: JSON.stringify(payload) }),

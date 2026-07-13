@@ -17,13 +17,13 @@ export const authApi = {
 };
 
 export function saveAuthSession(session: AuthResult) {
-  localStorage.setItem('chatin_access_token', session.accessToken);
-  localStorage.setItem('chatin_refresh_token', session.refreshToken);
-  localStorage.setItem('chatin_user', JSON.stringify(session.user));
+  sessionStorage.setItem('chatin_access_token', session.accessToken);
+  sessionStorage.setItem('chatin_refresh_token', session.refreshToken);
+  sessionStorage.setItem('chatin_user', JSON.stringify(session.user));
 }
 
 export function clearAuthSession() {
-  localStorage.removeItem('chatin_access_token');
-  localStorage.removeItem('chatin_refresh_token');
-  localStorage.removeItem('chatin_user');
+  sessionStorage.removeItem('chatin_access_token');
+  sessionStorage.removeItem('chatin_refresh_token');
+  sessionStorage.removeItem('chatin_user');
 }

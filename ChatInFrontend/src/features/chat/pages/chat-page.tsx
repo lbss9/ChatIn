@@ -202,8 +202,8 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('chatin_access_token');
-    const storedUser = localStorage.getItem('chatin_user');
+    const token = sessionStorage.getItem('chatin_access_token');
+    const storedUser = sessionStorage.getItem('chatin_user');
     if (!token || !storedUser) { router.replace('/login'); return; }
     setUser(JSON.parse(storedUser) as StoredUser);
     profileApi.me().then((profile) => setUser(profile as StoredUser)).catch(() => {});
@@ -267,7 +267,7 @@ export default function ChatPage() {
         return {
           ...c,
           members: c.members.map(m => m.userId === payload.userId ? { ...m, lastReadAt: payload.readAt } : m),
-          ...(payload.userId === (JSON.parse(localStorage.getItem('chatin_user') ?? '{}') as StoredUser)?.id
+          ...(payload.userId === (JSON.parse(sessionStorage.getItem('chatin_user') ?? '{}') as StoredUser)?.id
             ? { lastReadAt: payload.readAt }
             : {}),
         };
@@ -278,7 +278,7 @@ export default function ChatPage() {
       const isSession = ['sessão', 'session', 'unauthorized', 'token'].some(k => payload.message.toLowerCase().includes(k));
       if (isSession) {
         try {
-          const rt = localStorage.getItem('chatin_refresh_token');
+          const rt = sessionStorage.getItem('chatin_refresh_token');
           if (!rt) throw new Error('no_rt');
           const session = await authApi.refresh(rt);
           saveAuthSession(session);

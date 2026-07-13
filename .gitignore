@@ -8,5 +8,6 @@ ChatInBackend/uploads/
 !.env.example
 coverage
 *.log
+*.tsbuildinfo
 apps/api/.env
 apps/web/.env.local

@@ -11,13 +11,19 @@ import { memoryStorage } from 'multer';
 import { AccessTokenGuard } from '../auth/infrastructure/http/access-token.guard';
 import { FileStoragePort } from '../../shared/infrastructure/storage/file-storage.port';
 
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
 @Controller('uploads')
 @UseGuards(AccessTokenGuard)
 export class UploadsController {
   constructor(private readonly fileStorage: FileStoragePort) {}
 
   @Post('image')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(FileInterceptor('file', {
+    storage: memoryStorage(),
+    limits: { fileSize: MAX_IMAGE_SIZE_BYTES, files: 1 },
+  }))
   async uploadImage(
     @UploadedFile() file: Express.Multer.File,
   ): Promise<{ url: string }> {
@@ -25,12 +31,11 @@ export class UploadsController {
       throw new BadRequestException('Nenhum arquivo enviado.');
     }
 
-    if (!file.mimetype.startsWith('image/')) {
+    if (!ALLOWED_IMAGE_TYPES.has(file.mimetype)) {
       throw new BadRequestException('Apenas imagens são permitidas.');
     }
 
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
       throw new BadRequestException('O arquivo excede o limite de 5MB.');
     }
 

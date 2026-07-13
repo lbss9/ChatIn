@@ -27,7 +27,7 @@ export type UpdateTagInput = Partial<CreateTagInput> & { order?: number };
 let pendingRefresh: Promise<void> | null = null;
 
 async function request<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
-  const token = localStorage.getItem('chatin_access_token');
+  const token = sessionStorage.getItem('chatin_access_token');
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
@@ -39,7 +39,7 @@ async function request<T>(path: string, options: RequestInit = {}, isRetry = fal
 
   if (response.status === 401 && !isRetry) {
     if (!pendingRefresh) {
-      const rt = localStorage.getItem('chatin_refresh_token');
+      const rt = sessionStorage.getItem('chatin_refresh_token');
       if (!rt) { clearAuthSession(); throw new Error('Sessão inválida. Entre novamente.'); }
       pendingRefresh = authApi.refresh(rt).then(saveAuthSession)
         .catch(() => { clearAuthSession(); throw new Error('Sessão inválida. Entre novamente.'); })
@@ -56,7 +56,7 @@ async function request<T>(path: string, options: RequestInit = {}, isRetry = fal
 }
 
 async function uploadImage(file: File): Promise<{ url: string }> {
-  const token = localStorage.getItem('chatin_access_token');
+  const token = sessionStorage.getItem('chatin_access_token');
   const form = new FormData();
   form.append('file', file);
   const res = await fetch(`${API_URL}/uploads/image`, {
