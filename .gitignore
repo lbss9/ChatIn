@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+dist
+ChatInBackend/uploads/
+.env
+.env.*
+!.env.example
+coverage
+*.log
+apps/api/.env
+apps/web/.env.local
