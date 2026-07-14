@@ -14,9 +14,9 @@ export type UpdateTagInput = {
 };
 
 export class UpdateTagUseCase {
-  constructor(private readonly tags: TagsRepository) {}
+  public constructor(private readonly tags: TagsRepository) {}
 
-  async execute(input: UpdateTagInput): Promise<TagEntity> {
+  public async execute(input: UpdateTagInput): Promise<TagEntity> {
     const existing = await this.tags.findById(input.tagId);
     if (!existing) throw new ApplicationError('NOT_FOUND', 'Marcação não encontrada.');
     if (existing.userId !== input.userId) throw new ApplicationError('FORBIDDEN', 'Sem permissão para editar esta marcação.');

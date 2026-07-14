@@ -4,24 +4,24 @@ export class CreateTagDto {
   @IsString()
   @MinLength(1)
   @MaxLength(40)
-  name!: string;
+  public name!: string;
 
   @IsOptional()
   @IsString()
-  emoji?: string;
+  public emoji?: string;
 
   @IsOptional()
   @IsString()
-  color?: string;
+  public color?: string;
 
   @IsOptional()
   @IsString()
-  imageUrl?: string;
+  public imageUrl?: string;
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  conversationIds?: string[];
+  public conversationIds?: string[];
 }
 
 export class UpdateTagDto {
@@ -29,26 +29,26 @@ export class UpdateTagDto {
   @IsString()
   @MinLength(1)
   @MaxLength(40)
-  name?: string;
+  public name?: string;
 
   @IsOptional()
   @IsString()
-  emoji?: string;
+  public emoji?: string;
 
   @IsOptional()
   @IsString()
-  color?: string;
+  public color?: string;
 
   @IsOptional()
   @IsString()
-  imageUrl?: string;
+  public imageUrl?: string;
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  conversationIds?: string[];
+  public conversationIds?: string[];
 
   @IsOptional()
   @IsNumber()
-  order?: number;
+  public order?: number;
 }

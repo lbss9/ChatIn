@@ -54,22 +54,14 @@ import { ChatGateway } from './presentation/gateways/chat.gateway';
     },
     {
       provide: OpenDirectConversationUseCase,
-      useFactory: (
-        conversations: ConversationsRepository,
-        members: ConversationMembersRepository,
-        users: UsersRepository,
-        listConversations: ListConversationsUseCase,
-      ) => new OpenDirectConversationUseCase(conversations, members, users, listConversations),
+      useFactory: (conversations: ConversationsRepository, members: ConversationMembersRepository, users: UsersRepository, listConversations: ListConversationsUseCase) =>
+        new OpenDirectConversationUseCase(conversations, members, users, listConversations),
       inject: [ConversationsRepository, ConversationMembersRepository, UsersRepository, ListConversationsUseCase],
     },
     {
       provide: SendChatMessageUseCase,
-      useFactory: (
-        messages: ChatMessagesRepository,
-        users: UsersRepository,
-        conversations: ConversationsRepository,
-        members: ConversationMembersRepository,
-      ) => new SendChatMessageUseCase(messages, users, conversations, members),
+      useFactory: (messages: ChatMessagesRepository, users: UsersRepository, conversations: ConversationsRepository, members: ConversationMembersRepository) =>
+        new SendChatMessageUseCase(messages, users, conversations, members),
       inject: [ChatMessagesRepository, UsersRepository, ConversationsRepository, ConversationMembersRepository],
     },
     ChatGateway,

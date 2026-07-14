@@ -2,7 +2,7 @@ import { TagEntity } from '../../../../domain/entities/tag.entity';
 import { TagDocument } from '../schemas/tag.schema';
 
 export class TagMapper {
-  static toDomain(doc: TagDocument): TagEntity {
+  public static toDomain(doc: TagDocument): TagEntity {
     return new TagEntity({
       id: doc._id.toString(),
       userId: doc.userId,
@@ -15,7 +15,7 @@ export class TagMapper {
     });
   }
 
-  static toPersistence(entity: TagEntity) {
+  public static toPersistence(entity: TagEntity) {
     return {
       userId: entity.userId,
       name: entity.name,
@@ -27,7 +27,7 @@ export class TagMapper {
     };
   }
 
-  static toResponse(entity: TagEntity) {
+  public static toResponse(entity: TagEntity) {
     return {
       id: entity.id,
       userId: entity.userId,

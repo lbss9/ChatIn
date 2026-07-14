@@ -8,14 +8,14 @@ import { ConversationsRepository } from '../../domain/repositories/conversations
 import { ConversationSummary, ListConversationsUseCase } from './list-conversations.use-case';
 
 export class OpenDirectConversationUseCase {
-  constructor(
+  public constructor(
     private readonly conversations: ConversationsRepository,
     private readonly members: ConversationMembersRepository,
     private readonly users: UsersRepository,
     private readonly listConversations: ListConversationsUseCase,
   ) {}
 
-  async execute(user: UserEntity, targetUserId: string): Promise<ConversationSummary> {
+  public async execute(user: UserEntity, targetUserId: string): Promise<ConversationSummary> {
     if (user.id === targetUserId) throw new ApplicationError('INVALID_DIRECT_CONVERSATION', 'Você não pode abrir conversa direta consigo mesmo.');
 
     const targetUser = await this.users.findById(targetUserId);
@@ -23,19 +23,34 @@ export class OpenDirectConversationUseCase {
 
     const existingMembers = await this.members.findDirectBetween(user.id!, targetUser.id);
     if (existingMembers?.length) {
+      await this.members.restoreByConversationId(existingMembers[0].conversationId);
       const [summary] = (await this.listConversations.execute(user)).filter((item) => item.id === existingMembers[0].conversationId);
       return summary;
     }
 
-    const conversation = await this.conversations.save(new ConversationEntity({
-      title: `${user.name}, ${targetUser.name}`,
-      type: 'direct',
-      createdById: user.id!,
-    }));
+    const conversation = await this.conversations.save(
+      new ConversationEntity({
+        title: `${user.name}, ${targetUser.name}`,
+        type: 'direct',
+        createdById: user.id!,
+      }),
+    );
 
     await Promise.all([
-      this.members.save(new ConversationMemberEntity({ conversationId: conversation.id!, userId: user.id!, displayName: user.name })),
-      this.members.save(new ConversationMemberEntity({ conversationId: conversation.id!, userId: targetUser.id, displayName: targetUser.name })),
+      this.members.save(
+        new ConversationMemberEntity({
+          conversationId: conversation.id!,
+          userId: user.id!,
+          displayName: user.name,
+        }),
+      ),
+      this.members.save(
+        new ConversationMemberEntity({
+          conversationId: conversation.id!,
+          userId: targetUser.id,
+          displayName: targetUser.name,
+        }),
+      ),
     ]);
 
     const [summary] = (await this.listConversations.execute(user)).filter((item) => item.id === conversation.id);

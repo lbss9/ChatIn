@@ -18,22 +18,15 @@ export type UserProfile = {
 let pendingRefresh: Promise<void> | null = null;
 
 async function authorizedRequest<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
-  const token = sessionStorage.getItem('chatin_access_token');
   const headers = new Headers(options.headers);
   if (!(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
-  if (token) headers.set('Authorization', `Bearer ${token}`);
 
-  const response = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const response = await fetch(`${API_URL}${path}`, { ...options, credentials: 'include', headers });
 
   if (response.status === 401 && !isRetry) {
     if (!pendingRefresh) {
-      const rt = sessionStorage.getItem('chatin_refresh_token');
-      if (!rt) {
-        clearAuthSession();
-        throw new Error('Sessão inválida. Entre novamente.');
-      }
       pendingRefresh = authApi
-        .refresh(rt)
+        .refresh()
         .then(saveAuthSession)
         .catch(() => {
           clearAuthSession();
@@ -67,7 +60,7 @@ export const profileApi = {
     authorizedRequest<UserProfile>('/auth/email', { method: 'PATCH', body: JSON.stringify(payload) }).then(saveProfile),
   logout: () => authorizedRequest<{ success: boolean }>('/auth/logout', {
     method: 'POST',
-    body: JSON.stringify({ refreshToken: sessionStorage.getItem('chatin_refresh_token') ?? '' }),
+    body: JSON.stringify({}),
   }),
   deleteAccount: (payload: { currentPassword: string; confirmation: string }) =>
     authorizedRequest<{ success: boolean }>('/auth/account', { method: 'DELETE', body: JSON.stringify(payload) }),

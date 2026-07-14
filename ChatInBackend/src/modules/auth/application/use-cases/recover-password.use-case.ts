@@ -3,9 +3,12 @@ import { UsersRepository } from '../../../users/domain/repositories/users.reposi
 import { PasswordResetMailer } from '../ports/password-reset-mailer.port';
 
 export class RecoverPasswordUseCase {
-  constructor(private readonly users: UsersRepository, private readonly mailer: PasswordResetMailer) {}
+  public constructor(
+    private readonly users: UsersRepository,
+    private readonly mailer: PasswordResetMailer,
+  ) {}
 
-  async execute(email: string) {
+  public async execute(email: string) {
     const user = await this.users.findByEmail(email);
     const response = { message: 'Se o e-mail existir, enviaremos as instruções.' };
     if (!user) return response;

@@ -7,29 +7,33 @@ import { ConversationsRepository } from '../../domain/repositories/conversations
 import { ConversationSummary, ListConversationsUseCase } from './list-conversations.use-case';
 
 export class CreateGroupConversationUseCase {
-  constructor(
+  public constructor(
     private readonly conversations: ConversationsRepository,
     private readonly members: ConversationMembersRepository,
     private readonly listConversations: ListConversationsUseCase,
   ) {}
 
-  async execute(user: UserEntity, title: string): Promise<ConversationSummary> {
+  public async execute(user: UserEntity, title: string): Promise<ConversationSummary> {
     const normalizedTitle = title.trim();
     if (normalizedTitle.length < 2) throw new ApplicationError('INVALID_CONVERSATION_TITLE', 'Informe um nome para a conversa.');
     if (normalizedTitle.length > 80) throw new ApplicationError('INVALID_CONVERSATION_TITLE', 'O nome da conversa deve ter no máximo 80 caracteres.');
 
-    const conversation = await this.conversations.save(new ConversationEntity({
-      title: normalizedTitle,
-      type: 'group',
-      createdById: user.id!,
-    }));
+    const conversation = await this.conversations.save(
+      new ConversationEntity({
+        title: normalizedTitle,
+        type: 'group',
+        createdById: user.id!,
+      }),
+    );
 
-    await this.members.save(new ConversationMemberEntity({
-      conversationId: conversation.id!,
-      userId: user.id!,
-      displayName: user.name,
-      role: 'admin',
-    }));
+    await this.members.save(
+      new ConversationMemberEntity({
+        conversationId: conversation.id!,
+        userId: user.id!,
+        displayName: user.name,
+        role: 'admin',
+      }),
+    );
 
     const [summary] = (await this.listConversations.execute(user)).filter((item) => item.id === conversation.id);
     return summary;

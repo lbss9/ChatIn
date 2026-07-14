@@ -12,14 +12,14 @@ export type ConversationProps = {
 
 export class ConversationEntity {
   private readonly _id?: string;
-  private readonly _title: string;
-  private readonly _type: ConversationType;
-  private readonly _createdById: string;
-  private readonly _createdAt: Date;
+  private readonly _title!: string;
+  private readonly _type!: ConversationType;
+  private readonly _createdById!: string;
+  private readonly _createdAt!: Date;
   private _lastMessagePreview?: string;
   private _lastMessageAt?: Date;
 
-  constructor(props: ConversationProps) {
+  public constructor(props: ConversationProps) {
     this._id = props.id;
     this._title = props.title.trim();
     this._type = props.type;
@@ -29,15 +29,29 @@ export class ConversationEntity {
     this._createdAt = props.createdAt ?? new Date();
   }
 
-  get id() { return this._id; }
-  get title() { return this._title; }
-  get type() { return this._type; }
-  get createdById() { return this._createdById; }
-  get lastMessagePreview() { return this._lastMessagePreview; }
-  get lastMessageAt() { return this._lastMessageAt; }
-  get createdAt() { return this._createdAt; }
+  public get id() {
+    return this._id;
+  }
+  public get title() {
+    return this._title;
+  }
+  public get type() {
+    return this._type;
+  }
+  public get createdById() {
+    return this._createdById;
+  }
+  public get lastMessagePreview() {
+    return this._lastMessagePreview;
+  }
+  public get lastMessageAt() {
+    return this._lastMessageAt;
+  }
+  public get createdAt() {
+    return this._createdAt;
+  }
 
-  markLastMessage(content: string, at = new Date()) {
+  public markLastMessage(content: string, at = new Date()) {
     this._lastMessagePreview = content.trim().slice(0, 140);
     this._lastMessageAt = at;
   }

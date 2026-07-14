@@ -4,44 +4,71 @@ import { HydratedDocument } from 'mongoose';
 export type ChatMessageDocument = HydratedDocument<ChatMessagePersistence>;
 
 class ReplyContextPersistence {
-  @Prop({ required: true }) id!: string;
-  @Prop({ required: true }) senderName!: string;
-  @Prop({ required: true }) content!: string;
+  @Prop({ required: true }) public id!: string;
+  @Prop({ required: true }) public senderName!: string;
+  @Prop({ default: '' }) public content!: string;
 }
 
 class ReactionPersistence {
-  @Prop({ required: true }) emoji!: string;
-  @Prop({ type: [String], default: [] }) userIds!: string[];
+  @Prop({ required: true }) public emoji!: string;
+  @Prop({ type: [String], default: [] }) public userIds!: string[];
+}
+
+class AttachmentPersistence {
+  @Prop({ required: true, enum: ['image', 'audio', 'video', 'document'] }) public type!: string;
+  @Prop({ required: true }) public url!: string;
+  @Prop({ required: true }) public name!: string;
+  @Prop({ required: true }) public mimeType!: string;
+  @Prop({ required: true }) public size!: number;
+}
+
+class PollOptionPersistence {
+  @Prop({ required: true }) public id!: string;
+  @Prop({ required: true, maxlength: 120 }) public text!: string;
+  @Prop({ type: [String], default: [] }) public voterIds!: string[];
+}
+
+class PollPersistence {
+  @Prop({ required: true, maxlength: 180 }) public question!: string;
+  @Prop({ type: [PollOptionPersistence], default: [] }) public options!: PollOptionPersistence[];
+  @Prop({ default: false }) public allowMultiple!: boolean;
+  @Prop({ type: Date, default: null }) public closedAt?: Date | null;
 }
 
 @Schema({ timestamps: true, collection: 'chat_messages' })
 export class ChatMessagePersistence {
   @Prop({ required: true, trim: true, index: true })
-  conversationId!: string;
+  public conversationId!: string;
 
   @Prop({ required: true, trim: true })
-  senderId!: string;
+  public senderId!: string;
 
   @Prop({ required: true, trim: true })
-  senderName!: string;
+  public senderName!: string;
 
-  @Prop({ required: true, trim: true, maxlength: 1000 })
-  content!: string;
+  @Prop({ trim: true, maxlength: 1000, default: '' })
+  public content!: string;
 
   @Prop({ type: ReplyContextPersistence, default: null })
-  replyTo?: ReplyContextPersistence | null;
+  public replyTo?: ReplyContextPersistence | null;
 
   @Prop({ type: [ReactionPersistence], default: [] })
-  reactions!: ReactionPersistence[];
+  public reactions!: ReactionPersistence[];
+
+  @Prop({ type: [AttachmentPersistence], default: [] })
+  public attachments!: AttachmentPersistence[];
+
+  @Prop({ type: PollPersistence, default: null })
+  public poll?: PollPersistence | null;
 
   @Prop({ type: Date, default: null })
-  editedAt?: Date | null;
+  public editedAt?: Date | null;
 
   @Prop({ type: Date, default: null })
-  deletedAt?: Date | null;
+  public deletedAt?: Date | null;
 
-  createdAt!: Date;
-  updatedAt!: Date;
+  public createdAt!: Date;
+  public updatedAt!: Date;
 }
 
 export const ChatMessageSchema = SchemaFactory.createForClass(ChatMessagePersistence);

@@ -12,9 +12,9 @@ export type CreateTagInput = {
 };
 
 export class CreateTagUseCase {
-  constructor(private readonly tags: TagsRepository) {}
+  public constructor(private readonly tags: TagsRepository) {}
 
-  async execute(input: CreateTagInput): Promise<TagEntity> {
+  public async execute(input: CreateTagInput): Promise<TagEntity> {
     const name = input.name?.trim();
     if (!name) throw new ApplicationError('INVALID', 'O nome da marcação não pode ser vazio.');
 

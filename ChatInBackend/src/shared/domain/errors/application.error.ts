@@ -17,7 +17,7 @@ export type ApplicationErrorCode =
   | 'UNAUTHENTICATED';
 
 export class ApplicationError extends Error {
-  constructor(
+  public constructor(
     public readonly code: ApplicationErrorCode,
     message: string,
   ) {

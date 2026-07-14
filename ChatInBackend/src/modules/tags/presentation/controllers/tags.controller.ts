@@ -12,7 +12,7 @@ import { CreateTagDto, UpdateTagDto } from '../dto/tag.dto';
 @Controller('tags')
 @UseGuards(AccessTokenGuard)
 export class TagsController {
-  constructor(
+  public constructor(
     private readonly listTags: ListTagsUseCase,
     private readonly createTag: CreateTagUseCase,
     private readonly updateTag: UpdateTagUseCase,
@@ -20,13 +20,13 @@ export class TagsController {
   ) {}
 
   @Get()
-  async list(@CurrentUser() user: UserEntity) {
+  public async list(@CurrentUser() user: UserEntity) {
     const tags = await this.listTags.execute({ userId: user.id! });
     return tags.map(TagMapper.toResponse);
   }
 
   @Post()
-  async create(@CurrentUser() user: UserEntity, @Body() dto: CreateTagDto) {
+  public async create(@CurrentUser() user: UserEntity, @Body() dto: CreateTagDto) {
     const tag = await this.createTag.execute({
       userId: user.id!,
       name: dto.name,
@@ -39,11 +39,7 @@ export class TagsController {
   }
 
   @Put(':id')
-  async update(
-    @CurrentUser() user: UserEntity,
-    @Param('id') id: string,
-    @Body() dto: UpdateTagDto,
-  ) {
+  public async update(@CurrentUser() user: UserEntity, @Param('id') id: string, @Body() dto: UpdateTagDto) {
     const tag = await this.updateTag.execute({
       tagId: id,
       userId: user.id!,
@@ -58,7 +54,7 @@ export class TagsController {
   }
 
   @Delete(':id')
-  async remove(@CurrentUser() user: UserEntity, @Param('id') id: string) {
+  public async remove(@CurrentUser() user: UserEntity, @Param('id') id: string) {
     await this.deleteTag.execute({ tagId: id, userId: user.id! });
     return { success: true };
   }

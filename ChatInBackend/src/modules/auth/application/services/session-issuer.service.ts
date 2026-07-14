@@ -6,17 +6,26 @@ import { TokenService } from '../ports/token-service.port';
 export type AuthSession = {
   accessToken: string;
   refreshToken: string;
-  user: { id: string; name: string; nickname?: string; email: string; bio?: string; coverUrl?: string; coverPosition: string; badges: Array<{ code: string; awardedAt: Date }> };
+  user: {
+    id: string;
+    name: string;
+    nickname?: string;
+    email: string;
+    bio?: string;
+    coverUrl?: string;
+    coverPosition: string;
+    badges: Array<{ code: string; awardedAt: Date }>;
+  };
 };
 
 export class SessionIssuer {
-  constructor(
+  public constructor(
     private readonly users: UsersRepository,
     private readonly hasher: PasswordHasher,
     private readonly tokens: TokenService,
   ) {}
 
-  async issue(user: UserEntity): Promise<AuthSession> {
+  public async issue(user: UserEntity): Promise<AuthSession> {
     if (!user.id) throw new Error('A persisted user is required to issue a session.');
     const payload = { sub: user.id, email: user.email };
     const accessToken = await this.tokens.signAccessToken(payload);

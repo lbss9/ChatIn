@@ -8,34 +8,40 @@ import { ConversationDocument, ConversationPersistence } from '../schemas/conver
 
 @Injectable()
 export class MongooseConversationsRepository implements ConversationsRepository {
-  constructor(@InjectModel(ConversationPersistence.name) private readonly model: Model<ConversationDocument>) {}
+  public constructor(@InjectModel(ConversationPersistence.name) private readonly model: Model<ConversationDocument>) {}
 
-  async findById(id: string) {
+  public async findById(id: string) {
     const document = await this.model.findById(id);
     return document ? ConversationMapper.toDomain(document) : null;
   }
 
-  async findByIds(ids: string[]) {
+  public async findByIds(ids: string[]) {
     if (!ids.length) return [];
-    const documents = await this.model.find({ _id: { $in: ids } }).sort({ lastMessageAt: -1, createdAt: -1 }).exec();
+    const documents = await this.model
+      .find({ _id: { $in: ids } })
+      .sort({ lastMessageAt: -1, createdAt: -1 })
+      .exec();
     return documents.map(ConversationMapper.toDomain);
   }
 
-  async findGeneral() {
+  public async findGeneral() {
     const document = await this.model.findOne({ type: 'group', title: 'ChatIn geral' });
     return document ? ConversationMapper.toDomain(document) : null;
   }
 
-  async save(conversation: ConversationEntity) {
+  public async save(conversation: ConversationEntity) {
     const data = ConversationMapper.toPersistence(conversation);
     const document = conversation.id
-      ? await this.model.findByIdAndUpdate(conversation.id, data, { returnDocument: 'after', runValidators: true })
+      ? await this.model.findByIdAndUpdate(conversation.id, data, {
+          returnDocument: 'after',
+          runValidators: true,
+        })
       : await this.model.create(data);
     if (!document) throw new Error('Conversation persistence failed.');
     return ConversationMapper.toDomain(document);
   }
 
-  async deleteById(id: string) {
+  public async deleteById(id: string) {
     await this.model.findByIdAndDelete(id).exec();
   }
 }

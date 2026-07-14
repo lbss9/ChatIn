@@ -5,27 +5,34 @@ import { AuthTokenPayload, TokenService } from '../../application/ports/token-se
 
 @Injectable()
 export class JwtTokenService implements TokenService {
-  constructor(private readonly jwt: JwtService, private readonly config: ConfigService) {}
+  public constructor(
+    private readonly jwt: JwtService,
+    private readonly config: ConfigService,
+  ) {}
 
-  signAccessToken(payload: AuthTokenPayload) {
+  public signAccessToken(payload: AuthTokenPayload) {
     return this.jwt.signAsync(payload, {
       secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
       expiresIn: this.config.get<string>('JWT_ACCESS_EXPIRES_IN', '15m') as never,
     });
   }
 
-  signRefreshToken(payload: AuthTokenPayload) {
+  public signRefreshToken(payload: AuthTokenPayload) {
     return this.jwt.signAsync(payload, {
       secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET'),
       expiresIn: this.config.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as never,
     });
   }
 
-  verifyAccessToken(token: string) {
-    return this.jwt.verifyAsync<AuthTokenPayload>(token, { secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET') });
+  public verifyAccessToken(token: string) {
+    return this.jwt.verifyAsync<AuthTokenPayload>(token, {
+      secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
+    });
   }
 
-  verifyRefreshToken(token: string) {
-    return this.jwt.verifyAsync<AuthTokenPayload>(token, { secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET') });
+  public verifyRefreshToken(token: string) {
+    return this.jwt.verifyAsync<AuthTokenPayload>(token, {
+      secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET'),
+    });
   }
 }

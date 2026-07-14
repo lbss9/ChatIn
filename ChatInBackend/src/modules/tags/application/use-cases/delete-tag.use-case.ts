@@ -8,12 +8,12 @@ export type DeleteTagInput = {
 };
 
 export class DeleteTagUseCase {
-  constructor(
+  public constructor(
     private readonly tags: TagsRepository,
     private readonly fileStorage: FileStoragePort,
   ) {}
 
-  async execute(input: DeleteTagInput): Promise<void> {
+  public async execute(input: DeleteTagInput): Promise<void> {
     const existing = await this.tags.findById(input.tagId);
     if (!existing) throw new ApplicationError('NOT_FOUND', 'Marcação não encontrada.');
     if (existing.userId !== input.userId) throw new ApplicationError('FORBIDDEN', 'Sem permissão para excluir esta marcação.');

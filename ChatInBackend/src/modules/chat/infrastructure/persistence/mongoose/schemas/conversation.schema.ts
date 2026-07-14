@@ -7,22 +7,22 @@ export type ConversationDocument = HydratedDocument<ConversationPersistence>;
 @Schema({ timestamps: true, collection: 'conversations' })
 export class ConversationPersistence {
   @Prop({ required: true, trim: true, maxlength: 80 })
-  title!: string;
+  public title!: string;
 
   @Prop({ required: true, enum: ['group', 'direct'], index: true })
-  type!: ConversationType;
+  public type!: ConversationType;
 
   @Prop({ required: true, trim: true })
-  createdById!: string;
+  public createdById!: string;
 
   @Prop({ trim: true, maxlength: 140 })
-  lastMessagePreview?: string;
+  public lastMessagePreview?: string;
 
   @Prop()
-  lastMessageAt?: Date;
+  public lastMessageAt?: Date;
 
-  createdAt!: Date;
-  updatedAt!: Date;
+  public createdAt!: Date;
+  public updatedAt!: Date;
 }
 
 export const ConversationSchema = SchemaFactory.createForClass(ConversationPersistence);

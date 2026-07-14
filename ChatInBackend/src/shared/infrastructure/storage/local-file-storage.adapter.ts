@@ -12,12 +12,27 @@ export class LocalFileStorageAdapter implements FileStoragePort {
     'image/png': 'png',
     'image/webp': 'webp',
     'image/gif': 'gif',
+    'audio/mpeg': 'mp3',
+    'audio/mp3': 'mp3',
+    'audio/wav': 'wav',
+    'audio/webm': 'webm',
+    'audio/ogg': 'ogg',
+    'audio/mp4': 'm4a',
+    'video/mp4': 'mp4',
+    'video/webm': 'webm',
+    'video/quicktime': 'mov',
+    'application/pdf': 'pdf',
+    'text/plain': 'txt',
+    'application/msword': 'doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+    'application/vnd.ms-excel': 'xls',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
   };
 
-  async save(buffer: Buffer, _originalName: string, mimetype: string): Promise<string> {
+  public async save(buffer: Buffer, _originalName: string, mimetype: string): Promise<string> {
     await fs.mkdir(this.uploadsDir, { recursive: true });
 
-    const ext = this.extensionsByMimeType[mimetype] ?? 'bin';
+    const ext = this.extensionsByMimeType[mimetype.split(';')[0].trim().toLowerCase()] ?? 'bin';
 
     const filename = `${Date.now()}-${randomUUID()}.${ext}`;
     const filePath = path.join(this.uploadsDir, filename);
@@ -27,7 +42,7 @@ export class LocalFileStorageAdapter implements FileStoragePort {
     return `/uploads/${filename}`;
   }
 
-  async delete(fileUrl: string): Promise<void> {
+  public async delete(fileUrl: string): Promise<void> {
     try {
       const filename = fileUrl.replace(/^\/uploads\//, '');
       const filePath = path.join(this.uploadsDir, filename);

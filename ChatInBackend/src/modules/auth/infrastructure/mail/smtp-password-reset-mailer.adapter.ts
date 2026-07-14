@@ -6,9 +6,9 @@ import { PasswordResetMailer } from '../../application/ports/password-reset-mail
 @Injectable()
 export class SmtpPasswordResetMailer implements PasswordResetMailer {
   private readonly logger = new Logger(SmtpPasswordResetMailer.name);
-  constructor(private readonly config: ConfigService) {}
+  public constructor(private readonly config: ConfigService) {}
 
-  async send(email: string, token: string) {
+  public async send(email: string, token: string) {
     const appUrl = this.config.get<string>('APP_URL', 'http://localhost:3000').replace(/\/$/, '');
     const url = `${appUrl}/reset-password/?token=${encodeURIComponent(token)}`;
     const host = this.config.get<string>('SMTP_HOST');
@@ -21,7 +21,10 @@ export class SmtpPasswordResetMailer implements PasswordResetMailer {
       host,
       port,
       secure: port === 465,
-      auth: { user: this.config.getOrThrow<string>('SMTP_USER'), pass: this.config.getOrThrow<string>('SMTP_PASS') },
+      auth: {
+        user: this.config.getOrThrow<string>('SMTP_USER'),
+        pass: this.config.getOrThrow<string>('SMTP_PASS'),
+      },
     });
     await transport.sendMail({
       from: this.config.getOrThrow<string>('MAIL_FROM'),

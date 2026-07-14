@@ -6,28 +6,28 @@ export type TagDocument = HydratedDocument<TagPersistence>;
 @Schema({ timestamps: true, collection: 'tags' })
 export class TagPersistence {
   @Prop({ required: true, index: true })
-  userId!: string;
+  public userId!: string;
 
   @Prop({ required: true, trim: true })
-  name!: string;
+  public name!: string;
 
   @Prop({ type: String, default: null })
-  emoji!: string | null;
+  public emoji!: string | null;
 
   @Prop({ type: String, default: null })
-  color!: string | null;
+  public color!: string | null;
 
   @Prop({ type: String, default: null })
-  imageUrl!: string | null;
+  public imageUrl!: string | null;
 
   @Prop({ type: [String], default: [] })
-  conversationIds!: string[];
+  public conversationIds!: string[];
 
   @Prop({ default: 0 })
-  order!: number;
+  public order!: number;
 
-  createdAt!: Date;
-  updatedAt!: Date;
+  public createdAt!: Date;
+  public updatedAt!: Date;
 }
 
 export const TagSchema = SchemaFactory.createForClass(TagPersistence);

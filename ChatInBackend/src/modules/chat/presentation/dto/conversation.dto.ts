@@ -4,15 +4,15 @@ export class CreateGroupConversationDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(80)
-  title!: string;
+  public title!: string;
 }
 
 export class OpenDirectConversationDto {
   @IsMongoId()
-  targetUserId!: string;
+  public targetUserId!: string;
 }
 
 export class AddContactByEmailDto {
   @IsEmail()
-  email!: string;
+  public email!: string;
 }

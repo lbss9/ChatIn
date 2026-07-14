@@ -2,7 +2,7 @@ import { UserEntity } from '../../../../domain/entities/user.entity';
 import { UserDocument } from '../schemas/user.schema';
 
 export class UserMapper {
-  static toDomain(document: UserDocument): UserEntity {
+  public static toDomain(document: UserDocument): UserEntity {
     const legacyName = document.name?.trim() ?? '';
     const [legacyFirstName = '', ...legacyLastNameParts] = legacyName.split(' ').filter(Boolean);
 
@@ -13,7 +13,7 @@ export class UserMapper {
       bio: document.bio,
       coverUrl: document.coverUrl,
       coverPosition: document.coverPosition,
-      badges: (document.badges ?? []).map((badge) => typeof badge === 'string' ? badge : { code: badge.code, awardedAt: badge.awardedAt }),
+      badges: (document.badges ?? []).map((badge) => (typeof badge === 'string' ? badge : { code: badge.code, awardedAt: badge.awardedAt })),
       email: document.email,
       passwordHash: document.passwordHash,
       refreshTokenHashes: document.refreshTokenHashes,
@@ -22,7 +22,7 @@ export class UserMapper {
     });
   }
 
-  static toPersistence(entity: UserEntity) {
+  public static toPersistence(entity: UserEntity) {
     return {
       name: entity.name,
       firstName: entity.firstName,

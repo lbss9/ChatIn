@@ -4,14 +4,14 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 import { ServerOptions } from 'socket.io';
 
 export class SocketIoConfigAdapter extends IoAdapter {
-  constructor(
+  public constructor(
     app: INestApplicationContext,
     private readonly config: ConfigService,
   ) {
     super(app);
   }
 
-  createIOServer(port: number, options?: ServerOptions) {
+  public createIOServer(port: number, options?: ServerOptions) {
     const origins = this.config
       .get<string>('WEBSOCKET_ORIGIN', this.config.get<string>('WEB_ORIGIN', 'http://localhost:3000'))
       .split(',')

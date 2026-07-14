@@ -1,28 +1,33 @@
-import {
-  ConnectedSocket,
-  MessageBody,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  SubscribeMessage,
-  WebSocketGateway,
-  WebSocketServer,
-} from '@nestjs/websockets';
+import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Inject, Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { randomUUID } from 'crypto';
 import { ApplicationError } from '../../../../shared/domain/errors/application.error';
 import { TokenService } from '../../../auth/application/ports/token-service.port';
+import { readAccessCookie } from '../../../auth/infrastructure/http/auth-cookie.utils';
 import { UsersRepository } from '../../../users/domain/repositories/users.repository';
 import { ListChatHistoryUseCase } from '../../application/use-cases/list-chat-history.use-case';
 import { SendChatMessageUseCase } from '../../application/use-cases/send-chat-message.use-case';
 import { ChatMessagesRepository } from '../../domain/repositories/chat-messages.repository';
 import { ConversationMembersRepository } from '../../domain/repositories/conversation-members.repository';
 import { ChatMessageMapper } from '../../infrastructure/persistence/mongoose/mappers/chat-message.mapper';
+import { ChatMessageEntity, MessageAttachment, MessagePoll } from '../../domain/entities/chat-message.entity';
 
 type AuthenticatedSocket = Socket & {
   data: {
     user?: { id: string; name: string; email: string };
   };
 };
+
+type IncomingAttachment = {
+  type?: string;
+  url?: string;
+  name?: string;
+  mimeType?: string;
+  size?: number;
+};
+
+type IncomingPollOption = { id?: string; text?: string; voterIds?: string[] };
 
 @WebSocketGateway({ namespace: 'chat' })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -31,7 +36,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private readonly server!: Server;
 
-  constructor(
+  public constructor(
     @Inject(TokenService) private readonly tokens: TokenService,
     @Inject(UsersRepository) private readonly users: UsersRepository,
     @Inject(ListChatHistoryUseCase) private readonly listHistory: ListChatHistoryUseCase,
@@ -40,7 +45,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @Inject(ChatMessagesRepository) private readonly chatMessages: ChatMessagesRepository,
   ) {}
 
-  async handleConnection(client: AuthenticatedSocket) {
+  public async handleConnection(client: AuthenticatedSocket) {
     try {
       const token = this.extractToken(client);
       const payload = await this.tokens.verifyAccessToken(token);
@@ -57,16 +62,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  handleDisconnect(_client: AuthenticatedSocket) {
+  public handleDisconnect(_client: AuthenticatedSocket) {
     return;
   }
 
   @SubscribeMessage('chat:join')
-  async handleJoin(@MessageBody() body: { conversationId?: string }, @ConnectedSocket() client: AuthenticatedSocket) {
+  public async handleJoin(@MessageBody() body: { conversationId?: string }, @ConnectedSocket() client: AuthenticatedSocket) {
     try {
       if (!client.data.user) throw new ApplicationError('UNAUTHENTICATED', 'Sessão inválida.');
       const conversationId = this.resolveId(body?.conversationId);
-      if (!await this.members.exists(conversationId, client.data.user.id)) {
+      if (!(await this.members.exists(conversationId, client.data.user.id))) {
         throw new ApplicationError('NOT_CONVERSATION_MEMBER', 'Você não faz parte dessa conversa.');
       }
 
@@ -80,7 +85,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
 
       const messages = await this.listHistory.execute(conversationId);
-      client.emit('chat:history', { conversationId, messages: messages.map(ChatMessageMapper.toResponse) });
+      client.emit('chat:history', {
+        conversationId,
+        messages: messages.map(ChatMessageMapper.toResponse),
+      });
 
       return { event: 'chat:joined', data: { conversationId } };
     } catch (error) {
@@ -90,8 +98,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('chat:message')
-  async handleMessage(
-    @MessageBody() body: { conversationId?: string; content?: string; replyToId?: string | null },
+  public async handleMessage(
+    @MessageBody()
+    body: {
+      conversationId?: string;
+      content?: string;
+      replyToId?: string | null;
+      attachments?: IncomingAttachment[];
+    },
     @ConnectedSocket() client: AuthenticatedSocket,
   ) {
     try {
@@ -103,7 +117,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (body?.replyToId) {
         const referenced = await this.chatMessages.findById(body.replyToId);
         if (referenced && !referenced.deletedAt) {
-          replyTo = { id: referenced.id!, senderName: referenced.senderName, content: referenced.content };
+          replyTo = {
+            id: referenced.id!,
+            senderName: referenced.senderName,
+            content: referenced.content,
+          };
         }
       }
 
@@ -112,6 +130,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         senderId: client.data.user.id,
         content: body?.content ?? '',
         replyTo,
+        attachments: this.normalizeAttachments(body?.attachments ?? []),
       });
 
       const response = ChatMessageMapper.toResponse(message);
@@ -123,8 +142,84 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  @SubscribeMessage('chat:poll-create')
+  public async handleCreatePoll(
+    @MessageBody() body: { conversationId?: string; question?: string; options?: IncomingPollOption[]; allowMultiple?: boolean },
+    @ConnectedSocket() client: AuthenticatedSocket,
+  ) {
+    try {
+      if (!client.data.user) throw new ApplicationError('UNAUTHENTICATED', 'Sessão inválida.');
+      const conversationId = this.resolveId(body?.conversationId);
+      const poll = this.normalizePoll(body?.question, body?.options, Boolean(body?.allowMultiple));
+      const message = await this.sendMessage.execute({
+        conversationId,
+        senderId: client.data.user.id,
+        content: '',
+        poll,
+      });
+      const response = ChatMessageMapper.toResponse(message);
+      await this.emitToConversationMembers(conversationId, 'chat:message', response);
+      return { event: 'chat:poll:created', data: response };
+    } catch (error) {
+      const message = error instanceof ApplicationError ? error.message : 'Não foi possível criar a enquete.';
+      client.emit('chat:error', { message });
+    }
+  }
+
+  @SubscribeMessage('chat:poll-update')
+  public async handleUpdatePoll(
+    @MessageBody() body: { messageId?: string; question?: string; options?: IncomingPollOption[]; allowMultiple?: boolean },
+    @ConnectedSocket() client: AuthenticatedSocket,
+  ) {
+    try {
+      if (!client.data.user) throw new ApplicationError('UNAUTHENTICATED', 'Sessão inválida.');
+      if (!body?.messageId) throw new ApplicationError('INVALID', 'ID de mensagem inválido.');
+      const message = await this.chatMessages.findById(body.messageId);
+      if (!message?.poll) throw new ApplicationError('NOT_FOUND', 'Enquete não encontrada.');
+      if (message.senderId !== client.data.user.id) throw new ApplicationError('FORBIDDEN', 'Você não pode editar essa enquete.');
+      const poll = this.normalizePoll(body.question, body.options, Boolean(body.allowMultiple));
+      const updated = await this.chatMessages.updatePoll(body.messageId, poll);
+      if (!updated) throw new ApplicationError('NOT_FOUND', 'Enquete não encontrada.');
+      await this.emitMessageUpdated(updated);
+    } catch (error) {
+      const message = error instanceof ApplicationError ? error.message : 'Não foi possível editar a enquete.';
+      client.emit('chat:error', { message });
+    }
+  }
+
+  @SubscribeMessage('chat:poll-delete')
+  public async handleDeletePoll(@MessageBody() body: { messageId?: string }, @ConnectedSocket() client: AuthenticatedSocket) {
+    try {
+      if (!client.data.user) throw new ApplicationError('UNAUTHENTICATED', 'Sessão inválida.');
+      if (!body?.messageId) throw new ApplicationError('INVALID', 'ID de mensagem inválido.');
+      const message = await this.chatMessages.findById(body.messageId);
+      if (!message?.poll) throw new ApplicationError('NOT_FOUND', 'Enquete não encontrada.');
+      if (message.senderId !== client.data.user.id) throw new ApplicationError('FORBIDDEN', 'Você não pode apagar essa enquete.');
+      const updated = await this.chatMessages.markDeleted(body.messageId);
+      if (!updated) throw new ApplicationError('NOT_FOUND', 'Enquete não encontrada.');
+      await this.emitMessageUpdated(updated);
+    } catch (error) {
+      const message = error instanceof ApplicationError ? error.message : 'Não foi possível apagar a enquete.';
+      client.emit('chat:error', { message });
+    }
+  }
+
+  @SubscribeMessage('chat:poll-vote')
+  public async handleVotePoll(@MessageBody() body: { messageId?: string; optionId?: string }, @ConnectedSocket() client: AuthenticatedSocket) {
+    try {
+      if (!client.data.user) throw new ApplicationError('UNAUTHENTICATED', 'Sessão inválida.');
+      if (!body?.messageId || !body.optionId) throw new ApplicationError('INVALID', 'Voto inválido.');
+      const updated = await this.chatMessages.votePoll(body.messageId, body.optionId, client.data.user.id);
+      if (!updated?.poll) throw new ApplicationError('NOT_FOUND', 'Enquete não encontrada.');
+      await this.emitMessageUpdated(updated);
+    } catch (error) {
+      const message = error instanceof ApplicationError ? error.message : 'Não foi possível votar na enquete.';
+      client.emit('chat:error', { message });
+    }
+  }
+
   @SubscribeMessage('chat:typing')
-  handleTyping(@MessageBody() body: { conversationId?: string }, @ConnectedSocket() client: AuthenticatedSocket) {
+  public handleTyping(@MessageBody() body: { conversationId?: string }, @ConnectedSocket() client: AuthenticatedSocket) {
     if (!client.data.user || !body?.conversationId) return;
     client.to(body.conversationId).emit('chat:typing', {
       conversationId: body.conversationId,
@@ -133,7 +228,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('chat:stop-typing')
-  handleStopTyping(@MessageBody() body: { conversationId?: string }, @ConnectedSocket() client: AuthenticatedSocket) {
+  public handleStopTyping(@MessageBody() body: { conversationId?: string }, @ConnectedSocket() client: AuthenticatedSocket) {
     if (!client.data.user || !body?.conversationId) return;
     client.to(body.conversationId).emit('chat:stop-typing', {
       conversationId: body.conversationId,
@@ -142,7 +237,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('chat:read')
-  handleRead(@MessageBody() body: { conversationId?: string }, @ConnectedSocket() client: AuthenticatedSocket) {
+  public handleRead(@MessageBody() body: { conversationId?: string }, @ConnectedSocket() client: AuthenticatedSocket) {
     if (!client.data.user || !body?.conversationId) return;
     client.to(body.conversationId).emit('chat:read', {
       conversationId: body.conversationId,
@@ -151,10 +246,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('chat:edit-message')
-  async handleEditMessage(
-    @MessageBody() body: { messageId?: string; content?: string },
-    @ConnectedSocket() client: AuthenticatedSocket,
-  ) {
+  public async handleEditMessage(@MessageBody() body: { messageId?: string; content?: string }, @ConnectedSocket() client: AuthenticatedSocket) {
     try {
       if (!client.data.user) throw new ApplicationError('UNAUTHENTICATED', 'Sessão inválida.');
       const content = body?.content?.trim();
@@ -181,10 +273,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('chat:delete-message')
-  async handleDeleteMessage(
-    @MessageBody() body: { messageId?: string },
-    @ConnectedSocket() client: AuthenticatedSocket,
-  ) {
+  public async handleDeleteMessage(@MessageBody() body: { messageId?: string }, @ConnectedSocket() client: AuthenticatedSocket) {
     try {
       if (!client.data.user) throw new ApplicationError('UNAUTHENTICATED', 'Sessão inválida.');
       if (!body?.messageId) throw new ApplicationError('INVALID', 'ID de mensagem inválido.');
@@ -207,10 +296,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('chat:react')
-  async handleReact(
-    @MessageBody() body: { messageId?: string; emoji?: string; action?: 'add' | 'remove' },
-    @ConnectedSocket() client: AuthenticatedSocket,
-  ) {
+  public async handleReact(@MessageBody() body: { messageId?: string; emoji?: string; action?: 'add' | 'remove' }, @ConnectedSocket() client: AuthenticatedSocket) {
     try {
       if (!client.data.user) throw new ApplicationError('UNAUTHENTICATED', 'Sessão inválida.');
       if (!body?.messageId || !body?.emoji || !body?.action) return;
@@ -231,12 +317,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private extractToken(client: Socket) {
-    const authToken = client.handshake.auth?.token;
-    if (typeof authToken === 'string' && authToken.trim()) return authToken.trim();
-    const authorization = client.handshake.headers.authorization;
-    if (typeof authorization === 'string' && authorization.startsWith('Bearer ')) {
-      return authorization.slice('Bearer '.length).trim();
-    }
+    const cookieToken = readAccessCookie(client.handshake.headers.cookie);
+    if (cookieToken) return cookieToken;
     throw new Error('Missing token.');
   }
 
@@ -248,6 +330,55 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private userRoom(userId: string) {
     return `user:${userId}`;
+  }
+
+  public async notifyConversationChanged(conversationId: string) {
+    await this.emitToConversationMembers(conversationId, 'chat:conversation-updated', { conversationId });
+  }
+
+  private normalizeAttachments(attachments: IncomingAttachment[]): MessageAttachment[] {
+    return attachments.slice(0, 4).map((attachment) => {
+      if (attachment.type !== 'image' && attachment.type !== 'audio' && attachment.type !== 'video' && attachment.type !== 'document') {
+        throw new ApplicationError('INVALID', 'Tipo de anexo inválido.');
+      }
+      if (!attachment.url || !attachment.name || !attachment.mimeType || typeof attachment.size !== 'number') {
+        throw new ApplicationError('INVALID', 'Anexo inválido.');
+      }
+      return {
+        type: attachment.type,
+        url: attachment.url,
+        name: attachment.name.slice(0, 180),
+        mimeType: attachment.mimeType,
+        size: attachment.size,
+      };
+    });
+  }
+
+  private normalizePoll(question: string | undefined, options: IncomingPollOption[] | undefined, allowMultiple: boolean): MessagePoll {
+    const cleanQuestion = question?.trim();
+    if (!cleanQuestion) throw new ApplicationError('INVALID', 'Informe a pergunta da enquete.');
+    const cleanOptions = (options ?? [])
+      .map((option) => ({
+        id: option.id?.trim() || randomUUID(),
+        text: option.text?.trim() ?? '',
+        voterIds: option.voterIds ?? [],
+      }))
+      .filter((option) => option.text);
+    if (cleanOptions.length < 2) throw new ApplicationError('INVALID', 'A enquete precisa de pelo menos duas opções.');
+    if (cleanOptions.length > 8) throw new ApplicationError('INVALID', 'A enquete deve ter no máximo oito opções.');
+    return {
+      question: cleanQuestion.slice(0, 180),
+      options: cleanOptions.map((option) => ({
+        ...option,
+        text: option.text.slice(0, 120),
+      })),
+      allowMultiple,
+      closedAt: null,
+    };
+  }
+
+  private async emitMessageUpdated(message: ChatMessageEntity) {
+    await this.emitToConversationMembers(message.conversationId, 'chat:message-updated', ChatMessageMapper.toResponse(message));
   }
 
   private async emitToConversationMembers(conversationId: string, event: string, payload: unknown) {

@@ -13,11 +13,7 @@ import { TagPersistence, TagSchema } from './infrastructure/persistence/mongoose
 import { TagsController } from './presentation/controllers/tags.controller';
 
 @Module({
-  imports: [
-    AuthModule,
-    UploadsModule,
-    MongooseModule.forFeature([{ name: TagPersistence.name, schema: TagSchema }]),
-  ],
+  imports: [AuthModule, UploadsModule, MongooseModule.forFeature([{ name: TagPersistence.name, schema: TagSchema }])],
   controllers: [TagsController],
   providers: [
     { provide: TagsRepository, useClass: MongooseTagsRepository },
@@ -38,8 +34,7 @@ import { TagsController } from './presentation/controllers/tags.controller';
     },
     {
       provide: DeleteTagUseCase,
-      useFactory: (tags: TagsRepository, fileStorage: FileStoragePort) =>
-        new DeleteTagUseCase(tags, fileStorage),
+      useFactory: (tags: TagsRepository, fileStorage: FileStoragePort) => new DeleteTagUseCase(tags, fileStorage),
       inject: [TagsRepository, FileStoragePort],
     },
   ],

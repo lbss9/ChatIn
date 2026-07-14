@@ -7,31 +7,31 @@ export type ConversationMemberDocument = HydratedDocument<ConversationMemberPers
 @Schema({ timestamps: true, collection: 'conversation_members' })
 export class ConversationMemberPersistence {
   @Prop({ required: true, trim: true, index: true })
-  conversationId!: string;
+  public conversationId!: string;
 
   @Prop({ required: true, trim: true, index: true })
-  userId!: string;
+  public userId!: string;
 
   @Prop({ required: true, trim: true })
-  displayName!: string;
+  public displayName!: string;
 
   @Prop({ required: true, enum: ['admin', 'member'], default: 'member' })
-  role!: ConversationMemberRole;
+  public role!: ConversationMemberRole;
 
   @Prop({ required: true })
-  joinedAt!: Date;
+  public joinedAt!: Date;
 
   @Prop({ type: Date, default: null })
-  pinnedAt?: Date | null;
+  public pinnedAt?: Date | null;
 
   @Prop({ type: Date, default: null })
-  mutedUntil?: Date | null;
+  public mutedUntil?: Date | null;
 
   @Prop({ type: Date, default: null })
-  lastReadAt?: Date | null;
+  public lastReadAt?: Date | null;
 
   @Prop({ type: Date, default: null })
-  deletedAt?: Date | null;
+  public deletedAt?: Date | null;
 }
 
 export const ConversationMemberSchema = SchemaFactory.createForClass(ConversationMemberPersistence);

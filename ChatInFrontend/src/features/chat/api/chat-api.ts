@@ -14,34 +14,62 @@ export type ChatConversation = {
   members: Array<{ userId: string; displayName: string; role: 'admin' | 'member'; lastReadAt: string | null }>;
 };
 
+export type UploadedChatFile = {
+  url: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  type: 'image' | 'audio' | 'video' | 'document';
+};
+
 let pendingRefresh: Promise<void> | null = null;
 
 async function request<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
-  const token = sessionStorage.getItem('chatin_access_token');
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   });
 
   if (response.status === 401 && !isRetry) {
     if (!pendingRefresh) {
-      const rt = sessionStorage.getItem('chatin_refresh_token');
-      if (!rt) {
-        clearAuthSession();
-        throw new Error('Sessão inválida. Entre novamente.');
-      }
       pendingRefresh = authApi
-        .refresh(rt)
+        .refresh()
         .then(saveAuthSession)
         .catch(() => { clearAuthSession(); throw new Error('Sessão inválida. Entre novamente.'); })
         .finally(() => { pendingRefresh = null; });
     }
     await pendingRefresh;
     return request<T>(path, options, true);
+  }
+
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(json.message ?? 'Erro inesperado.');
+  return json;
+}
+
+async function uploadRequest<T>(path: string, file: File, isRetry = false): Promise<T> {
+  const body = new FormData();
+  body.append('file', file);
+  const response = await fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    body,
+  });
+
+  if (response.status === 401 && !isRetry) {
+    if (!pendingRefresh) {
+      pendingRefresh = authApi
+        .refresh()
+        .then(saveAuthSession)
+        .catch(() => { clearAuthSession(); throw new Error('Sessão inválida. Entre novamente.'); })
+        .finally(() => { pendingRefresh = null; });
+    }
+    await pendingRefresh;
+    return uploadRequest<T>(path, file, true);
   }
 
   const json = await response.json().catch(() => ({}));
@@ -70,4 +98,5 @@ export const chatApi = {
     method: 'DELETE',
     body: JSON.stringify({ deleteForAll }),
   }),
+  uploadFile: (file: File) => uploadRequest<UploadedChatFile>('/uploads/file', file),
 };

@@ -18,12 +18,36 @@ import { AccessTokenGuard } from './infrastructure/http/access-token.guard';
 import { AuthController } from './presentation/controllers/auth.controller';
 
 const applicationProviders = [
-  { provide: SessionIssuer, useFactory: (users: UsersRepository, hasher: PasswordHasher, tokens: TokenService) => new SessionIssuer(users, hasher, tokens), inject: [UsersRepository, PasswordHasher, TokenService] },
-  { provide: RegisterUserUseCase, useFactory: (users: UsersRepository, hasher: PasswordHasher, sessions: SessionIssuer) => new RegisterUserUseCase(users, hasher, sessions), inject: [UsersRepository, PasswordHasher, SessionIssuer] },
-  { provide: LoginUseCase, useFactory: (users: UsersRepository, hasher: PasswordHasher, sessions: SessionIssuer) => new LoginUseCase(users, hasher, sessions), inject: [UsersRepository, PasswordHasher, SessionIssuer] },
-  { provide: RefreshSessionUseCase, useFactory: (users: UsersRepository, hasher: PasswordHasher, tokens: TokenService, sessions: SessionIssuer) => new RefreshSessionUseCase(users, hasher, tokens, sessions), inject: [UsersRepository, PasswordHasher, TokenService, SessionIssuer] },
-  { provide: RecoverPasswordUseCase, useFactory: (users: UsersRepository, mailer: PasswordResetMailer) => new RecoverPasswordUseCase(users, mailer), inject: [UsersRepository, PasswordResetMailer] },
-  { provide: ResetPasswordUseCase, useFactory: (users: UsersRepository, hasher: PasswordHasher) => new ResetPasswordUseCase(users, hasher), inject: [UsersRepository, PasswordHasher] },
+  {
+    provide: SessionIssuer,
+    useFactory: (users: UsersRepository, hasher: PasswordHasher, tokens: TokenService) => new SessionIssuer(users, hasher, tokens),
+    inject: [UsersRepository, PasswordHasher, TokenService],
+  },
+  {
+    provide: RegisterUserUseCase,
+    useFactory: (users: UsersRepository, hasher: PasswordHasher, sessions: SessionIssuer) => new RegisterUserUseCase(users, hasher, sessions),
+    inject: [UsersRepository, PasswordHasher, SessionIssuer],
+  },
+  {
+    provide: LoginUseCase,
+    useFactory: (users: UsersRepository, hasher: PasswordHasher, sessions: SessionIssuer) => new LoginUseCase(users, hasher, sessions),
+    inject: [UsersRepository, PasswordHasher, SessionIssuer],
+  },
+  {
+    provide: RefreshSessionUseCase,
+    useFactory: (users: UsersRepository, hasher: PasswordHasher, tokens: TokenService, sessions: SessionIssuer) => new RefreshSessionUseCase(users, hasher, tokens, sessions),
+    inject: [UsersRepository, PasswordHasher, TokenService, SessionIssuer],
+  },
+  {
+    provide: RecoverPasswordUseCase,
+    useFactory: (users: UsersRepository, mailer: PasswordResetMailer) => new RecoverPasswordUseCase(users, mailer),
+    inject: [UsersRepository, PasswordResetMailer],
+  },
+  {
+    provide: ResetPasswordUseCase,
+    useFactory: (users: UsersRepository, hasher: PasswordHasher) => new ResetPasswordUseCase(users, hasher),
+    inject: [UsersRepository, PasswordHasher],
+  },
 ];
 
 @Module({

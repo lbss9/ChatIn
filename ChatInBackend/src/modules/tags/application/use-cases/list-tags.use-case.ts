@@ -6,9 +6,9 @@ export type ListTagsInput = {
 };
 
 export class ListTagsUseCase {
-  constructor(private readonly tags: TagsRepository) {}
+  public constructor(private readonly tags: TagsRepository) {}
 
-  async execute(input: ListTagsInput): Promise<TagEntity[]> {
+  public async execute(input: ListTagsInput): Promise<TagEntity[]> {
     return this.tags.findAllByUserId(input.userId);
   }
 }

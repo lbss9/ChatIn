@@ -23,7 +23,7 @@ const statusByCode: Record<ApplicationErrorCode, HttpStatus> = {
 
 @Catch(ApplicationError)
 export class ApplicationExceptionFilter implements ExceptionFilter {
-  catch(exception: ApplicationError, host: ArgumentsHost) {
+  public catch(exception: ApplicationError, host: ArgumentsHost) {
     const response = host.switchToHttp().getResponse<Response>();
     const statusCode = statusByCode[exception.code];
     response.status(statusCode).json({ statusCode, code: exception.code, message: exception.message });

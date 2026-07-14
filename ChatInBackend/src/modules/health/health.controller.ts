@@ -3,11 +3,14 @@ import { HealthCheck, HealthCheckService, MongooseHealthIndicator } from '@nestj
 
 @Controller('health')
 export class HealthController {
-  constructor(private readonly health: HealthCheckService, private readonly database: MongooseHealthIndicator) {}
+  public constructor(
+    private readonly health: HealthCheckService,
+    private readonly database: MongooseHealthIndicator,
+  ) {}
 
   @Get()
   @HealthCheck()
-  check() {
+  public check() {
     return this.health.check([() => this.database.pingCheck('mongodb', { timeout: 1_500 })]);
   }
 }

@@ -8,9 +8,7 @@ import { UploadsController } from './uploads.controller';
 @Module({
   imports: [AuthModule, UsersModule],
   controllers: [UploadsController],
-  providers: [
-    { provide: FileStoragePort, useClass: LocalFileStorageAdapter },
-  ],
+  providers: [{ provide: FileStoragePort, useClass: LocalFileStorageAdapter }],
   exports: [FileStoragePort],
 })
 export class UploadsModule {}

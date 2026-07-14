@@ -9,45 +9,54 @@ import { ConversationsRepository } from '../../domain/repositories/conversations
 import { CreateGroupConversationUseCase } from '../../application/use-cases/create-group-conversation.use-case';
 import { ListConversationsUseCase } from '../../application/use-cases/list-conversations.use-case';
 import { OpenDirectConversationUseCase } from '../../application/use-cases/open-direct-conversation.use-case';
+import { ChatGateway } from '../gateways/chat.gateway';
 import { AddContactByEmailDto, CreateGroupConversationDto, OpenDirectConversationDto } from '../dto/conversation.dto';
 
 @Controller('conversations')
 @UseGuards(AccessTokenGuard)
 export class ConversationsController {
-  constructor(
+  public constructor(
     private readonly listConversations: ListConversationsUseCase,
     private readonly createGroupConversation: CreateGroupConversationUseCase,
     private readonly openDirectConversation: OpenDirectConversationUseCase,
     @Inject(UsersRepository) private readonly users: UsersRepository,
-    @Inject(ConversationMembersRepository) private readonly membersRepo: ConversationMembersRepository,
+    @Inject(ConversationMembersRepository)
+    private readonly membersRepo: ConversationMembersRepository,
     @Inject(ChatMessagesRepository) private readonly chatMessagesRepo: ChatMessagesRepository,
     @Inject(ConversationsRepository) private readonly conversationsRepo: ConversationsRepository,
+    private readonly chatGateway: ChatGateway,
   ) {}
 
   @Get()
-  list(@CurrentUser() user: UserEntity) {
+  public list(@CurrentUser() user: UserEntity) {
     return this.listConversations.execute(user);
   }
 
   @Post('groups')
-  createGroup(@CurrentUser() user: UserEntity, @Body() dto: CreateGroupConversationDto) {
-    return this.createGroupConversation.execute(user, dto.title);
+  public async createGroup(@CurrentUser() user: UserEntity, @Body() dto: CreateGroupConversationDto) {
+    const conversation = await this.createGroupConversation.execute(user, dto.title);
+    await this.chatGateway.notifyConversationChanged(conversation.id);
+    return conversation;
   }
 
   @Post('direct')
-  openDirect(@CurrentUser() user: UserEntity, @Body() dto: OpenDirectConversationDto) {
-    return this.openDirectConversation.execute(user, dto.targetUserId);
+  public async openDirect(@CurrentUser() user: UserEntity, @Body() dto: OpenDirectConversationDto) {
+    const conversation = await this.openDirectConversation.execute(user, dto.targetUserId);
+    await this.chatGateway.notifyConversationChanged(conversation.id);
+    return conversation;
   }
 
   @Post('contacts')
-  async addContact(@CurrentUser() user: UserEntity, @Body() dto: AddContactByEmailDto) {
+  public async addContact(@CurrentUser() user: UserEntity, @Body() dto: AddContactByEmailDto) {
     const contact = await this.users.findByEmail(dto.email.trim().toLowerCase());
     if (!contact?.id || contact.id === user.id) throw new NotFoundException('Não foi possível adicionar este contato.');
-    return this.openDirectConversation.execute(user, contact.id);
+    const conversation = await this.openDirectConversation.execute(user, contact.id);
+    await this.chatGateway.notifyConversationChanged(conversation.id);
+    return conversation;
   }
 
   @Patch(':id/pin')
-  async pin(@CurrentUser() user: UserEntity, @Param('id') id: string) {
+  public async pin(@CurrentUser() user: UserEntity, @Param('id') id: string) {
     const member = await this.membersRepo.findOne(id, user.id!);
     if (!member || member.deletedAt) throw new NotFoundException('Conversa não encontrada.');
     const pinnedAt = member.pinnedAt ? null : new Date();
@@ -56,7 +65,7 @@ export class ConversationsController {
   }
 
   @Patch(':id/mute')
-  async mute(@CurrentUser() user: UserEntity, @Param('id') id: string) {
+  public async mute(@CurrentUser() user: UserEntity, @Param('id') id: string) {
     const member = await this.membersRepo.findOne(id, user.id!);
     if (!member || member.deletedAt) throw new NotFoundException('Conversa não encontrada.');
     const mutedUntil = member.mutedUntil ? null : new Date('2099-12-31');
@@ -65,7 +74,7 @@ export class ConversationsController {
   }
 
   @Patch(':id/read')
-  async markRead(@CurrentUser() user: UserEntity, @Param('id') id: string) {
+  public async markRead(@CurrentUser() user: UserEntity, @Param('id') id: string) {
     const isMember = await this.membersRepo.exists(id, user.id!);
     if (!isMember) throw new NotFoundException('Conversa não encontrada.');
     const readAt = new Date();
@@ -74,11 +83,7 @@ export class ConversationsController {
   }
 
   @Delete(':id')
-  async deleteConversation(
-    @CurrentUser() user: UserEntity,
-    @Param('id') id: string,
-    @Body() body: { deleteForAll?: boolean },
-  ) {
+  public async deleteConversation(@CurrentUser() user: UserEntity, @Param('id') id: string, @Body() body: { deleteForAll?: boolean }) {
     const isMember = await this.membersRepo.exists(id, user.id!);
     if (!isMember) throw new NotFoundException('Conversa não encontrada.');
 

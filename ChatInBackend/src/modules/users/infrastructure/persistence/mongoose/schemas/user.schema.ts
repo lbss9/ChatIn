@@ -5,43 +5,43 @@ export type UserDocument = HydratedDocument<UserPersistence>;
 
 export class UserBadgePersistence {
   @Prop({ required: true, trim: true, maxlength: 80 })
-  code!: string;
+  public code!: string;
 
   @Prop({ required: true })
-  awardedAt!: Date;
+  public awardedAt!: Date;
 }
 
 @Schema({ timestamps: true, collection: 'users' })
 export class UserPersistence {
   @Prop({ trim: true, maxlength: 100 })
-  name?: string;
+  public name?: string;
 
   @Prop({ required: true, trim: true, maxlength: 40 })
-  firstName!: string;
+  public firstName!: string;
 
   @Prop({ required: true, trim: true, maxlength: 60 })
-  lastName!: string;
+  public lastName!: string;
 
-  @Prop({ trim: true, maxlength: 32, sparse: true }) nickname?: string;
-  @Prop({ trim: true, maxlength: 240 }) bio?: string;
-  @Prop({ trim: true, maxlength: 500 }) coverUrl?: string;
-  @Prop({ trim: true, maxlength: 40, default: 'center center' }) coverPosition!: string;
-  @Prop({ type: [UserBadgePersistence], default: [] }) badges!: Array<string | UserBadgePersistence>;
+  @Prop({ trim: true, maxlength: 32, sparse: true }) public nickname?: string;
+  @Prop({ trim: true, maxlength: 240 }) public bio?: string;
+  @Prop({ trim: true, maxlength: 500 }) public coverUrl?: string;
+  @Prop({ trim: true, maxlength: 40, default: 'center center' }) public coverPosition!: string;
+  @Prop({ type: [UserBadgePersistence], default: [] }) public badges!: Array<string | UserBadgePersistence>;
 
   @Prop({ required: true, unique: true, lowercase: true, trim: true })
-  email!: string;
+  public email!: string;
 
   @Prop({ required: true })
-  passwordHash!: string;
+  public passwordHash!: string;
 
   @Prop({ type: [String], default: [] })
-  refreshTokenHashes!: string[];
+  public refreshTokenHashes!: string[];
 
   @Prop()
-  passwordResetTokenHash?: string;
+  public passwordResetTokenHash?: string;
 
   @Prop()
-  passwordResetExpiresAt?: Date;
+  public passwordResetExpiresAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserPersistence);

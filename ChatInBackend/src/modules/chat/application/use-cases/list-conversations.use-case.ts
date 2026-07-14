@@ -17,12 +17,12 @@ export type ConversationSummary = {
 };
 
 export class ListConversationsUseCase {
-  constructor(
+  public constructor(
     private readonly conversations: ConversationsRepository,
     private readonly members: ConversationMembersRepository,
   ) {}
 
-  async execute(user: UserEntity) {
+  public async execute(user: UserEntity) {
     await this.ensureGeneralConversation(user);
 
     const memberships = await this.members.findByUserId(user.id!);
@@ -42,20 +42,24 @@ export class ListConversationsUseCase {
   private async ensureGeneralConversation(user: UserEntity) {
     let conversation = await this.conversations.findGeneral();
     if (!conversation) {
-      conversation = await this.conversations.save(new ConversationEntity({
-        title: 'ChatIn geral',
-        type: 'group',
-        createdById: user.id!,
-      }));
+      conversation = await this.conversations.save(
+        new ConversationEntity({
+          title: 'ChatIn geral',
+          type: 'group',
+          createdById: user.id!,
+        }),
+      );
     }
 
-    if (!await this.members.exists(conversation.id!, user.id!)) {
-      await this.members.save(new ConversationMemberEntity({
-        conversationId: conversation.id!,
-        userId: user.id!,
-        displayName: user.name,
-        role: conversation.createdById === user.id ? 'admin' : 'member',
-      }));
+    if (!(await this.members.exists(conversation.id!, user.id!))) {
+      await this.members.save(
+        new ConversationMemberEntity({
+          conversationId: conversation.id!,
+          userId: user.id!,
+          displayName: user.name,
+          role: conversation.createdById === user.id ? 'admin' : 'member',
+        }),
+      );
     }
   }
 

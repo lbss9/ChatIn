@@ -8,64 +8,74 @@ import { ConversationMemberDocument, ConversationMemberPersistence } from '../sc
 
 @Injectable()
 export class MongooseConversationMembersRepository implements ConversationMembersRepository {
-  constructor(@InjectModel(ConversationMemberPersistence.name) private readonly model: Model<ConversationMemberDocument>) {}
+  public constructor(
+    @InjectModel(ConversationMemberPersistence.name)
+    private readonly model: Model<ConversationMemberDocument>,
+  ) {}
 
-  async exists(conversationId: string, userId: string) {
+  public async exists(conversationId: string, userId: string) {
     return Boolean(await this.model.exists({ conversationId, userId, deletedAt: null }));
   }
 
-  async findByConversationId(conversationId: string) {
+  public async findByConversationId(conversationId: string) {
     const documents = await this.model.find({ conversationId, deletedAt: null }).sort({ role: 1, joinedAt: 1 }).exec();
     return documents.map(ConversationMemberMapper.toDomain);
   }
 
-  async findByUserId(userId: string) {
+  public async findByUserId(userId: string) {
     const documents = await this.model.find({ userId, deletedAt: null }).sort({ joinedAt: 1 }).exec();
     return documents.map(ConversationMemberMapper.toDomain);
   }
 
-  async findDirectBetween(firstUserId: string, secondUserId: string) {
-    const firstMemberships = await this.model.find({ userId: firstUserId, deletedAt: null }).exec();
+  public async findDirectBetween(firstUserId: string, secondUserId: string) {
+    const firstMemberships = await this.model.find({ userId: firstUserId }).exec();
     if (!firstMemberships.length) return null;
 
     const conversationIds = firstMemberships.map((membership) => membership.conversationId);
-    const secondMemberships = await this.model.find({ userId: secondUserId, conversationId: { $in: conversationIds }, deletedAt: null }).exec();
+    const secondMemberships = await this.model.find({ userId: secondUserId, conversationId: { $in: conversationIds } }).exec();
 
     for (const membership of secondMemberships) {
-      const members = await this.model.find({ conversationId: membership.conversationId, deletedAt: null }).exec();
+      const members = await this.model.find({ conversationId: membership.conversationId }).exec();
       if (members.length === 2) return members.map(ConversationMemberMapper.toDomain);
     }
 
     return null;
   }
 
-  async findOne(conversationId: string, userId: string) {
+  public async findOne(conversationId: string, userId: string) {
     const doc = await this.model.findOne({ conversationId, userId }).exec();
     return doc ? ConversationMemberMapper.toDomain(doc) : null;
   }
 
-  async save(member: ConversationMemberEntity) {
-    const document = await this.model.findOneAndUpdate(
-      { conversationId: member.conversationId, userId: member.userId },
-      ConversationMemberMapper.toPersistence(member),
-      { upsert: true, returnDocument: 'after', runValidators: true },
-    );
+  public async save(member: ConversationMemberEntity) {
+    const document = await this.model.findOneAndUpdate({ conversationId: member.conversationId, userId: member.userId }, ConversationMemberMapper.toPersistence(member), {
+      upsert: true,
+      returnDocument: 'after',
+      runValidators: true,
+    });
     if (!document) throw new Error('Conversation member persistence failed.');
     return ConversationMemberMapper.toDomain(document);
   }
 
-  async patch(
+  public async restoreByConversationId(conversationId: string) {
+    await this.model.updateMany({ conversationId }, { $set: { deletedAt: null } }).exec();
+  }
+
+  public async patch(
     conversationId: string,
     userId: string,
-    data: Partial<{ pinnedAt: Date | null; mutedUntil: Date | null; lastReadAt: Date; deletedAt: Date | null }>,
+    data: Partial<{
+      pinnedAt: Date | null;
+      mutedUntil: Date | null;
+      lastReadAt: Date;
+      deletedAt: Date | null;
+    }>,
   ) {
-    const doc = await this.model
-      .findOneAndUpdate({ conversationId, userId }, { $set: data }, { returnDocument: 'after' })
-      .exec();
+    const doc = await this.model.findOneAndUpdate({ conversationId, userId }, { $set: data }, { returnDocument: 'after' }).exec();
     return doc ? ConversationMemberMapper.toDomain(doc) : null;
   }
 
-  async deleteByConversationId(conversationId: string) {
+  public async deleteByConversationId(conversationId: string) {
     await this.model.deleteMany({ conversationId }).exec();
   }
 }

@@ -129,7 +129,12 @@ export function AuthCard({ mode }: { mode: Mode }) {
                   value={isLogin ? undefined : password}
                   onChange={isLogin ? undefined : (event) => setPassword(event.target.value)}
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label="Mostrar senha">
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label="Mostrar senha"
+                >
                   {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
                 </button>
               </div>

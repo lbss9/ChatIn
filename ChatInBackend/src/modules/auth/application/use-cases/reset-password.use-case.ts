@@ -6,9 +6,12 @@ import { PasswordHasher } from '../ports/password-hasher.port';
 export type ResetPasswordInput = { token: string; password: string };
 
 export class ResetPasswordUseCase {
-  constructor(private readonly users: UsersRepository, private readonly hasher: PasswordHasher) {}
+  public constructor(
+    private readonly users: UsersRepository,
+    private readonly hasher: PasswordHasher,
+  ) {}
 
-  async execute(input: ResetPasswordInput) {
+  public async execute(input: ResetPasswordInput) {
     const tokenHash = createHash('sha256').update(input.token).digest('hex');
     const user = await this.users.findByPasswordResetToken(tokenHash, new Date());
     if (!user) throw new ApplicationError('INVALID_PASSWORD_RESET_TOKEN', 'Token inválido ou expirado.');

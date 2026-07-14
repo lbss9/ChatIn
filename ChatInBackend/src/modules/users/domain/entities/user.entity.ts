@@ -22,15 +22,15 @@ export type UserProps = {
 
 export class UserEntity {
   private readonly _id?: string;
-  private _name: string;
+  private _name!: string;
   private _nickname?: string;
   private _bio?: string;
   private _coverUrl?: string;
-  private _coverPosition: string;
-  private _badges: UserBadge[];
-  private _email: string;
-  private _passwordHash: string;
-  private _refreshTokenHashes: string[];
+  private _coverPosition!: string;
+  private _badges!: UserBadge[];
+  private _email!: string;
+  private _passwordHash!: string;
+  private _refreshTokenHashes!: string[];
   private _passwordResetTokenHash?: string;
   private _passwordResetExpiresAt?: Date;
 
@@ -41,7 +41,7 @@ export class UserEntity {
     this._bio = props.bio?.trim() || undefined;
     this._coverUrl = props.coverUrl?.trim() || undefined;
     this._coverPosition = props.coverPosition?.trim() || 'center center';
-    this._badges = (props.badges ?? []).map((badge) => typeof badge === 'string' ? { code: badge, awardedAt: new Date() } : badge);
+    this._badges = (props.badges ?? []).map((badge) => (typeof badge === 'string' ? { code: badge, awardedAt: new Date() } : badge));
     this._email = props.email.trim().toLowerCase();
     this._passwordHash = props.passwordHash;
     this._refreshTokenHashes = props.refreshTokenHashes ?? [];
@@ -64,11 +64,21 @@ export class UserEntity {
   public get name() {
     return this._name;
   }
-  public get nickname() { return this._nickname; }
-  public get bio() { return this._bio; }
-  public get coverUrl() { return this._coverUrl; }
-  public get coverPosition() { return this._coverPosition; }
-  public get badges() { return this._badges.map((badge) => ({ ...badge })); }
+  public get nickname() {
+    return this._nickname;
+  }
+  public get bio() {
+    return this._bio;
+  }
+  public get coverUrl() {
+    return this._coverUrl;
+  }
+  public get coverPosition() {
+    return this._coverPosition;
+  }
+  public get badges() {
+    return this._badges.map((badge) => ({ ...badge }));
+  }
 
   public get email() {
     return this._email;
@@ -96,9 +106,7 @@ export class UserEntity {
 
   public removeRefreshTokenHashes(matchingIndexes: number[]) {
     const indexes = new Set(matchingIndexes);
-    this._refreshTokenHashes = this._refreshTokenHashes.filter(
-      (_, index) => !indexes.has(index),
-    );
+    this._refreshTokenHashes = this._refreshTokenHashes.filter((_, index) => !indexes.has(index));
   }
 
   public startPasswordReset(tokenHash: string, expiresAt: Date) {

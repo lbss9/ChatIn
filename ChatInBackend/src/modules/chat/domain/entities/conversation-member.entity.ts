@@ -15,17 +15,17 @@ export type ConversationMemberProps = {
 
 export class ConversationMemberEntity {
   private readonly _id?: string;
-  private readonly _conversationId: string;
-  private readonly _userId: string;
-  private readonly _displayName: string;
-  private readonly _role: ConversationMemberRole;
-  private readonly _joinedAt: Date;
-  private readonly _pinnedAt: Date | null;
-  private readonly _mutedUntil: Date | null;
-  private readonly _lastReadAt: Date | null;
-  private readonly _deletedAt: Date | null;
+  private readonly _conversationId!: string;
+  private readonly _userId!: string;
+  private readonly _displayName!: string;
+  private readonly _role!: ConversationMemberRole;
+  private readonly _joinedAt!: Date;
+  private readonly _pinnedAt!: Date | null;
+  private readonly _mutedUntil!: Date | null;
+  private readonly _lastReadAt!: Date | null;
+  private readonly _deletedAt!: Date | null;
 
-  constructor(props: ConversationMemberProps) {
+  public constructor(props: ConversationMemberProps) {
     this._id = props.id;
     this._conversationId = props.conversationId;
     this._userId = props.userId;
@@ -38,14 +38,34 @@ export class ConversationMemberEntity {
     this._deletedAt = props.deletedAt ?? null;
   }
 
-  get id() { return this._id; }
-  get conversationId() { return this._conversationId; }
-  get userId() { return this._userId; }
-  get displayName() { return this._displayName; }
-  get role() { return this._role; }
-  get joinedAt() { return this._joinedAt; }
-  get pinnedAt() { return this._pinnedAt; }
-  get mutedUntil() { return this._mutedUntil; }
-  get lastReadAt() { return this._lastReadAt; }
-  get deletedAt() { return this._deletedAt; }
+  public get id() {
+    return this._id;
+  }
+  public get conversationId() {
+    return this._conversationId;
+  }
+  public get userId() {
+    return this._userId;
+  }
+  public get displayName() {
+    return this._displayName;
+  }
+  public get role() {
+    return this._role;
+  }
+  public get joinedAt() {
+    return this._joinedAt;
+  }
+  public get pinnedAt() {
+    return this._pinnedAt;
+  }
+  public get mutedUntil() {
+    return this._mutedUntil;
+  }
+  public get lastReadAt() {
+    return this._lastReadAt;
+  }
+  public get deletedAt() {
+    return this._deletedAt;
+  }
 }

@@ -2,7 +2,7 @@ import { ConversationMemberEntity } from '../../../../domain/entities/conversati
 import { ConversationMemberDocument } from '../schemas/conversation-member.schema';
 
 export class ConversationMemberMapper {
-  static toDomain(document: ConversationMemberDocument): ConversationMemberEntity {
+  public static toDomain(document: ConversationMemberDocument): ConversationMemberEntity {
     return new ConversationMemberEntity({
       id: document._id.toString(),
       conversationId: document.conversationId,
@@ -17,7 +17,7 @@ export class ConversationMemberMapper {
     });
   }
 
-  static toPersistence(entity: ConversationMemberEntity) {
+  public static toPersistence(entity: ConversationMemberEntity) {
     return {
       conversationId: entity.conversationId,
       userId: entity.userId,

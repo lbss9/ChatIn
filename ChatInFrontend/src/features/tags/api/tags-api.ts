@@ -27,21 +27,18 @@ export type UpdateTagInput = Partial<CreateTagInput> & { order?: number };
 let pendingRefresh: Promise<void> | null = null;
 
 async function request<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
-  const token = sessionStorage.getItem('chatin_access_token');
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   });
 
   if (response.status === 401 && !isRetry) {
     if (!pendingRefresh) {
-      const rt = sessionStorage.getItem('chatin_refresh_token');
-      if (!rt) { clearAuthSession(); throw new Error('Sessão inválida. Entre novamente.'); }
-      pendingRefresh = authApi.refresh(rt).then(saveAuthSession)
+      pendingRefresh = authApi.refresh().then(saveAuthSession)
         .catch(() => { clearAuthSession(); throw new Error('Sessão inválida. Entre novamente.'); })
         .finally(() => { pendingRefresh = null; });
     }
@@ -56,12 +53,11 @@ async function request<T>(path: string, options: RequestInit = {}, isRetry = fal
 }
 
 async function uploadImage(file: File): Promise<{ url: string }> {
-  const token = sessionStorage.getItem('chatin_access_token');
   const form = new FormData();
   form.append('file', file);
   const res = await fetch(`${API_URL}/uploads/image`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'include',
     body: form,
   });
   const json = await res.json().catch(() => ({}));
